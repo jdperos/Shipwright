@@ -27,32 +27,74 @@ static constexpr uint8_t MAX_NORMAL_INSTRUMENT = 0x7D;
 static constexpr uint8_t NUM_NORMAL_INSTRUMENTS = 0x7E;
 // 0xFF is outside the remappable instrument range
 static constexpr uint8_t INVALID_INSTRUMENT = 0xFF;
-// SequenceChannel::fontId is a u8 - max font index is 0xFF
-static constexpr uint16_t NUM_FONTS = 0x100;
 
-// Per-sequence remap table. Populated lazily. INVALID_INSTRUMENT means not yet assigned
-// I'd love to reduce the size of this from 64k, but would likely require runtime allocation
-static uint8_t sInstrumentRemap[NUM_FONTS][NUM_NORMAL_INSTRUMENTS];
-
+static uint8_t* sInstrumentRemap = nullptr;
 // Prevents the same replacement from being assigned twice within a sequence (shuffle)
-// Moved to a bitset to reduce from 32k to 4k static memory
+// Moved to a bitset to reduce static memory
+static uint64_t* sReplacementUsedFlags = nullptr;
+static size_t sRemapFontCount = 0;
+
 static constexpr size_t BITS_PER_REPLACEMENT_USED_WORD = sizeof(uint64_t) * 8;
 static constexpr size_t NUM_REPLACEMENT_USED_WORDS = (NUM_NORMAL_INSTRUMENTS + BITS_PER_REPLACEMENT_USED_WORD - 1) / BITS_PER_REPLACEMENT_USED_WORD;
-static uint64_t sReplacementUsed[NUM_FONTS][NUM_REPLACEMENT_USED_WORDS];
 
-// Bitset helpers
+// Allocates remap storage sized to the loaded font map
+static bool EnsureRemapStorage() {
+    if (fontMapSize == 0) {
+        return false;
+    }
+
+    if (sInstrumentRemap != nullptr && sReplacementUsedFlags != nullptr && sRemapFontCount == fontMapSize) {
+        return true;
+    }
+
+    free(sInstrumentRemap);
+    free(sReplacementUsedFlags);
+
+    sRemapFontCount = fontMapSize;
+
+    sInstrumentRemap = static_cast<uint8_t*>(malloc(sRemapFontCount * NUM_NORMAL_INSTRUMENTS));
+    sReplacementUsedFlags = static_cast<uint64_t*>(
+        calloc(sRemapFontCount * NUM_REPLACEMENT_USED_WORDS, sizeof(uint64_t))
+    );
+
+    if (sInstrumentRemap == nullptr || sReplacementUsedFlags == nullptr) {
+        free(sInstrumentRemap);
+        free(sReplacementUsedFlags);
+
+        sInstrumentRemap = nullptr;
+        sReplacementUsedFlags = nullptr;
+        sRemapFontCount = 0;
+        return false;
+    }
+
+    memset(sInstrumentRemap, INVALID_INSTRUMENT, sRemapFontCount * NUM_NORMAL_INSTRUMENTS);
+    return true;
+}
+
+// Returns the remap table index for a font/instrument pair
+static size_t GetInstrumentRemapIndex(uint8_t fontId, uint8_t instId) {
+    return (static_cast<size_t>(fontId) * NUM_NORMAL_INSTRUMENTS) + instId;
+}
+
+// Returns the bit flag table index for a font/word pair
+static size_t GetReplacementUsedWordIndex(uint8_t fontId, size_t word) {
+    return (static_cast<size_t>(fontId) * NUM_REPLACEMENT_USED_WORDS) + word;
+}
+
+// Returns whether a replacement instrument has already been used for this font
 static bool IsReplacementUsed(uint8_t fontId, uint8_t instId) {
     const size_t word = instId / BITS_PER_REPLACEMENT_USED_WORD;
     const size_t bit = instId % BITS_PER_REPLACEMENT_USED_WORD;
 
-    return (sReplacementUsed[fontId][word] & (1ULL << bit)) != 0;
+    return (sReplacementUsedFlags[GetReplacementUsedWordIndex(fontId, word)] & (1ULL << bit)) != 0;
 }
 
+// Marks a replacement instrument as used for this font
 static void MarkReplacementUsed(uint8_t fontId, uint8_t instId) {
     const size_t word = instId / BITS_PER_REPLACEMENT_USED_WORD;
     const size_t bit = instId % BITS_PER_REPLACEMENT_USED_WORD;
 
-    sReplacementUsed[fontId][word] |= 1ULL << bit;
+    sReplacementUsedFlags[GetReplacementUsedWordIndex(fontId, word)] |= 1ULL << bit;
 }
 
 // When instrument A is swapped for B, the pitch range boundaries used to select between
@@ -103,8 +145,10 @@ static uint32_t RandomIndex(uint32_t count) {
 
 // Clears all per-sequence remap and range override state
 static void ResetState() {
-    memset(sInstrumentRemap, INVALID_INSTRUMENT, sizeof(sInstrumentRemap));
-    memset(sReplacementUsed, 0, sizeof(sReplacementUsed));
+    if (EnsureRemapStorage()) {
+        memset(sInstrumentRemap, INVALID_INSTRUMENT, sRemapFontCount * NUM_NORMAL_INSTRUMENTS);
+        memset(sReplacementUsedFlags, 0, sRemapFontCount * NUM_REPLACEMENT_USED_WORDS * sizeof(uint64_t));
+    }
 
     memset(sRangeOverrides, 0, sizeof(sRangeOverrides));
     sRangeOverrideCount = 0;
@@ -144,8 +188,8 @@ static Instrument* FindOriginalRangeInstrument(Instrument* replacement) {
 
 // Stores a newly chosen remap and records its range override
 static uint8_t CommitRemap(uint8_t fontId, uint8_t originalInstId, uint8_t replacementInstId) {
-    sInstrumentRemap[fontId][originalInstId] = replacementInstId;
-    MarkReplacementUsed(fontId,replacementInstId);
+    sInstrumentRemap[GetInstrumentRemapIndex(fontId, originalInstId)] = replacementInstId;
+    MarkReplacementUsed(fontId, replacementInstId);
 
     Instrument* original = Audio_GetInstrumentInner(fontId, originalInstId);
     Instrument* replacement = Audio_GetInstrumentInner(fontId, replacementInstId);
@@ -161,7 +205,11 @@ static uint8_t GetOrCreateRemappedInstrument(uint8_t fontId, uint8_t originalIns
         return originalInstId;
     }
 
-    uint8_t& remapped = sInstrumentRemap[fontId][originalInstId];
+    if (!EnsureRemapStorage() || fontId >= sRemapFontCount) {
+        return originalInstId;
+    }
+
+    uint8_t& remapped = sInstrumentRemap[GetInstrumentRemapIndex(fontId, originalInstId)];
 
     if (remapped != INVALID_INSTRUMENT) {
         return remapped;
