@@ -1680,6 +1680,10 @@ void SohMenu::AddMenuEnhancements() {
     AddWidget(path, "Bonfire Mode", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_ENHANCEMENT("BonfireMode"))
         .Options(CheckboxOptions().Tooltip("Gossip Stones are your new healing/spawn points."));
+    AddWidget(path, "Corpse Run Mode", WIDGET_CVAR_CHECKBOX)
+        .CVar(CVAR_ENHANCEMENT("CorpseRun"))
+        .Options(CheckboxOptions().Tooltip("On death, drops all of your consumables at the location of death.\n\n"
+                                           "Pick up the remnant before dying again or it goes away!"));
     AddWidget(path, "Hurt Container Mode", WIDGET_CVAR_CHECKBOX)
         .CVar(CVAR_ENHANCEMENT("HurtContainer"))
         .Options(CheckboxOptions().Tooltip("Changes Heart Piece and Heart Container functionality.\n\n"
