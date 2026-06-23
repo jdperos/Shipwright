@@ -4791,6 +4791,7 @@ void KaleidoScope_Update(PlayState* play) {
                         osSyncPrintf("MAGIC_NOW=%d ", gSaveContext.magic);
                         osSyncPrintf("Z_MAGIC_NOW_NOW=%d\n", gSaveContext.magicFillTarget);
                         osSyncPrintf(VT_RST);
+                        GameInteractor_ExecuteOnGameOverRespawn(play);
                     } else {
                         play->state.running = 0;
                         SET_NEXT_GAMESTATE(&play->state, Opening_Init, OpeningContext);

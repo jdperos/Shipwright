@@ -42,6 +42,8 @@ DEFINE_HOOK(OnActorKill, (void* actor));
 DEFINE_HOOK(OnActorDestroy, (void* actor));
 DEFINE_HOOK(OnEnemyDefeat, (void* actor));
 DEFINE_HOOK(OnBossDefeat, (void* actor));
+DEFINE_HOOK(OnLoadToLastEntrance, (PlayState * play));
+DEFINE_HOOK(OnGameOverRespawn, (PlayState * play));
 DEFINE_HOOK(OnTimestamp, (u8 item));
 DEFINE_HOOK(OnPlayerBonk, ());
 DEFINE_HOOK(OnPlayerSetModels, (Player * player, u8 modelGroup));

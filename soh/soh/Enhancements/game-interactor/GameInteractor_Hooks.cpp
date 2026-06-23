@@ -197,6 +197,14 @@ void GameInteractor_ExecuteOnBossDefeat(void* actor) {
     GameInteractor::Instance->ExecuteHooksForFilter<GameInteractor::OnBossDefeat>(actor);
 }
 
+void GameInteractor_ExecuteOnLoadToLastEntrance(PlayState* play) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnLoadToLastEntrance>(play);
+}
+
+void GameInteractor_ExecuteOnGameOverRespawn(PlayState* play) {
+    GameInteractor::Instance->ExecuteHooks<GameInteractor::OnGameOverRespawn>(play);
+}
+
 void GameInteractor_ExecuteOnTimestamp(u8 item) {
     GameInteractor::Instance->ExecuteHooks<GameInteractor::OnTimestamp>(item);
 }

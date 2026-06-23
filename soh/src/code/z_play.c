@@ -2151,6 +2151,8 @@ void Play_LoadToLastEntrance(PlayState* play) {
     }
 
     play->transitionType = TRANS_TYPE_FADE_BLACK;
+
+    GameInteractor_ExecuteOnLoadToLastEntrance(play);
 }
 
 void Play_TriggerRespawn(PlayState* play) {

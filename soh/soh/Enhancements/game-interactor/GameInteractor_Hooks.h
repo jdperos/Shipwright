@@ -43,6 +43,8 @@ void GameInteractor_ExecuteOnActorKill(void* actor);
 void GameInteractor_ExecuteOnActorDestroy(void* actor);
 void GameInteractor_ExecuteOnEnemyDefeat(void* actor);
 void GameInteractor_ExecuteOnBossDefeat(void* actor);
+void GameInteractor_ExecuteOnLoadToLastEntrance(PlayState* play);
+void GameInteractor_ExecuteOnGameOverRespawn(PlayState* play);
 void GameInteractor_ExecuteOnTimestamp(u8 item);
 void GameInteractor_ExecuteOnPlayerBonk();
 void GameInteractor_ExecuteOnPlayerSetModels(Player* player, u8 modelGroup);
