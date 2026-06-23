@@ -36,14 +36,14 @@ static BonfireData sBonfire;
 
 static void WriteRespawnData(PlayState* play) {
     RespawnData* respawnData = &gSaveContext.respawn[RESPAWN_MODE_DOWN];
- 
+
     respawnData->entranceIndex = sBonfire.entranceIndex;
     respawnData->roomIndex = sBonfire.roomIndex;
     respawnData->pos = sBonfire.pos;
     respawnData->yaw = sBonfire.yaw;
     respawnData->playerParams = 0xDFF;
     respawnData->tempSwchFlags = play->actorCtx.flags.tempSwch;
-    respawnData->tempCollectFlags = play->actorCtx.flags.tempCollect;   
+    respawnData->tempCollectFlags = play->actorCtx.flags.tempCollect;
 }
 
 // Use when no PlayState is available
