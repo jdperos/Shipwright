@@ -2,7 +2,6 @@
 
 #include <nlohmann/json.hpp>
 #include "randomizerTypes.h"
-#include "randomizer_check_objects.h"
 #include "soh/SohGui/UIWidgets.hpp"
 
 namespace CheckTracker {
@@ -61,5 +60,5 @@ void UpdateAllAreas();
 void RecalculateAllAreaTotals();
 void SpoilAreaFromCheck(RandomizerCheck rc);
 void RecalculateAvailableChecks(RandomizerRegion startingRegion = RR_ROOT, RandoAgeTime startingAgeTime = RAT_NONE);
-void LoadFromPreset(nlohmann::json info);
+void LoadFromPreset(const nlohmann::json& info);
 } // namespace CheckTracker
